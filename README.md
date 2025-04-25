@@ -2,7 +2,7 @@
 
 The StarRocks MCP Server acts as a bridge between AI assistants and StarRocks databases. It allows for direct SQL execution, database exploration, data visualization via charts, and retrieving detailed schema/data overviews without requiring complex client-side setup.
 
-[![MCP Demo Image](mcpserverdemo.jpg)]
+![MCP Demo Image](mcpserverdemo.jpg)
 
 ## Features
 
