@@ -1,5 +1,12 @@
 # StarRocks MCP Server Release Notes
 
+## Version 0.1.1
+
+1. add new tool query_and_plotly_chart
+2. add new tool table_overview & db_overview
+3. add env config STARROCKS_DB and STARROCKS_OVERVIEW_LIMIT, both optional
+
+
 ## Version 0.1.0 (Initial Release)
 
 We are excited to announce the first release of the StarRocks MCP (Model Context Protocol) Server. This server enables AI assistants to interact directly with StarRocks databases, providing a seamless interface for executing queries and retrieving database information.
