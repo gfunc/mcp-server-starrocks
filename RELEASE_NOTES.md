@@ -1,5 +1,9 @@
 # StarRocks MCP Server Release Notes
 
+## Version 0.1.2
+
+Fix accidental extra import of sqlalalchemy
+
 ## Version 0.1.1
 
 1. add new tool query_and_plotly_chart

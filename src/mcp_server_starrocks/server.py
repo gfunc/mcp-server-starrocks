@@ -28,7 +28,7 @@ import pandas as pd
 import plotly.express as px
 import base64
 
-SERVER_VERSION = "0.1.1"
+SERVER_VERSION = "0.1.2"
 
 server = Server("mcp-server-starrocks", SERVER_VERSION)
 
