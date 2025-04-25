@@ -2,8 +2,6 @@
 
 The StarRocks MCP Server acts as a bridge between AI assistants and StarRocks databases. It allows for direct SQL execution, database exploration, data visualization via charts, and retrieving detailed schema/data overviews without requiring complex client-side setup.
 
-![MCP Demo Image](mcpserverdemo.jpg)
-
 ## Features
 
 *   **Direct SQL Execution:** Run `SELECT` queries (`read_query`) and DDL/DML commands (`write_query`).
@@ -185,3 +183,7 @@ None defined by this server.
 *   When `db_overview` is called, it lists all tables in the database and then attempts to retrieve the overview for *each table* using the same caching logic as `table_overview` (checking cache first, fetching if needed and `refresh` is `false` or cache miss). If `refresh` is `true` for `db_overview`, it forces a refresh for *all* tables in that database.
 *   The `STARROCKS_OVERVIEW_LIMIT` environment variable provides a *soft target* for the maximum length of the overview string generated *per table* when populating the cache, helping to manage memory usage.
 *   Cached results, including any error messages encountered during the original fetch, are stored and returned on subsequent cache hits.
+
+## Demo
+
+![MCP Demo Image](mcpserverdemo.jpg)
