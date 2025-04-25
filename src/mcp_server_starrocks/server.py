@@ -28,8 +28,6 @@ import pandas as pd
 import plotly.express as px
 import base64
 
-from sqlalchemy.sql.functions import count
-
 SERVER_VERSION = "0.1.1"
 
 server = Server("mcp-server-starrocks", SERVER_VERSION)
