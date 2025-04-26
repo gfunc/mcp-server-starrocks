@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import ast
 import math
 import sys
 import os
@@ -486,6 +487,65 @@ async def handle_list_tools() -> list[types.Tool]:
     ]
 
 
+def validate_plotly_expr(expr: str):
+    """
+    Validates a string to ensure it represents a single call to a method
+    of the 'px' object, without containing other statements or imports,
+    and ensures its arguments do not contain nested function calls.
+
+    Args:
+        expr: The string expression to validate.
+
+    Raises:
+        ValueError: If the expression does not meet the security criteria.
+        SyntaxError: If the expression is not valid Python syntax.
+    """
+    # 1. Check for valid Python syntax
+    try:
+        tree = ast.parse(expr)
+    except SyntaxError as e:
+        raise SyntaxError(f"Invalid Python syntax in expression: {e}") from e
+
+    # 2. Check that the tree contains exactly one top-level node (statement/expression)
+    if len(tree.body) != 1:
+        raise ValueError("Expression must be a single statement or expression.")
+
+    node = tree.body[0]
+
+    # 3. Check that the single node is an expression
+    if not isinstance(node, ast.Expr):
+        raise ValueError("Expression must be a single expression, not a statement (like assignment, function definition, import, etc.).")
+
+    # 4. Get the actual value of the expression and check it's a function call
+    expr_value = node.value
+    if not isinstance(expr_value, ast.Call):
+        raise ValueError("Expression must be a function call.")
+
+    # 5. Check that the function being called is an attribute lookup (like px.scatter)
+    if not isinstance(expr_value.func, ast.Attribute):
+         raise ValueError("Function call must be on an object attribute (e.g., px.scatter).")
+
+    # 6. Check that the attribute is being accessed on a simple variable name
+    if not isinstance(expr_value.func.value, ast.Name):
+         raise ValueError("Function call must be on a simple variable name (e.g., px.scatter, not obj.px.scatter).")
+
+    # 7. Check that the simple variable name is 'px'
+    if expr_value.func.value.id != 'px':
+        raise ValueError("Function call must be on the 'px' object.")
+
+    # Check positional arguments
+    for i, arg_node in enumerate(expr_value.args):
+        for sub_node in ast.walk(arg_node):
+            if isinstance(sub_node, ast.Call):
+                raise ValueError(f"Positional argument at index {i} contains a disallowed nested function call.")
+    # Check keyword arguments
+    for kw in expr_value.keywords:
+        for sub_node in ast.walk(kw.value):
+            if isinstance(sub_node, ast.Call):
+                keyword_name = kw.arg if kw.arg else '<unknown>'
+                raise ValueError(f"Keyword argument '{keyword_name}' contains a disallowed nested function call.")
+
+
 def query_and_plotly_chart(conn, query: str, plotly_expr: str):
     """
     Executes an SQL query, creates a Pandas DataFrame, generates a Plotly chart
@@ -526,6 +586,7 @@ def query_and_plotly_chart(conn, query: str, plotly_expr: str):
         # In a production scenario with untrusted input, consider safer alternatives
         # like AST parsing or a restricted execution environment.
         local_vars = {'df': df}
+        validate_plotly_expr(plotly_expr)
         fig = eval(plotly_expr, {"px": px}, local_vars)  # Pass px in globals, df in locals
 
         if not hasattr(fig, 'to_image'):
