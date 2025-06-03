@@ -40,6 +40,7 @@ global_table_overview_cache = {}
 
 mcp_transport = os.getenv('MCP_TRANSPORT_MODE', 'stdio')
 
+
 def get_connection():
     global global_connection, default_database
     if global_connection is None:
@@ -143,6 +144,7 @@ def _get_table_details(conn, db_name, table_name, limit=None):
         cursor = conn.cursor()
         # 1. Get Row Count
         try:
+            # TODO: get estimated row count from statistics if available
             query = f"SELECT COUNT(*) FROM {full_table_name}"
             # print(f"Executing: {query}") # Debug
             cursor.execute(query)
@@ -231,7 +233,6 @@ def handle_single_column_query(query):
             cursor.close()
 
 
-@mcp.tool(name="read_query", description="Execute a SELECT query or commands that return a ResultSet")
 def read_query(query: Annotated[str, Field(description="SQL query to execute")]) -> str:
     # return csv like result set, with column names as first row
     try:
@@ -271,7 +272,7 @@ def read_query(query: Annotated[str, Field(description="SQL query to execute")])
         if cursor:
             cursor.close()
 
-@mcp.tool(name="write_query", description="Execute a DDL/DML or other StarRocks command that do not have a ResultSet")
+
 def write_query(query: Annotated[str, Field(description="SQL to execute")]) -> str:
     try:
         conn = get_connection()
@@ -323,19 +324,27 @@ Internal information exposed by StarRocks similar to linux /proc, following are 
 '/catalog'	Shows the information of catalogs.
 '''
 
-@mcp.resource(uri="starrocks:///databases", name="All Databases", description="List all databases in StarRocks", mime_type="text/plain")
+
+@mcp.resource(uri="starrocks:///databases", name="All Databases", description="List all databases in StarRocks",
+              mime_type="text/plain")
 def get_all_databases() -> str:
     return handle_single_column_query("SHOW DATABASES")
 
-@mcp.resource(uri="starrocks:///{db}/{table}/schema", name="Table Schema", description="Get the schema of a table using SHOW CREATE TABLE", mime_type="text/plain")
+
+@mcp.resource(uri="starrocks:///{db}/{table}/schema", name="Table Schema",
+              description="Get the schema of a table using SHOW CREATE TABLE", mime_type="text/plain")
 def get_table_schema(db: str, table: str) -> str:
     return handle_single_column_query(f"SHOW CREATE TABLE {db}.{table}")
 
-@mcp.resource(uri="starrocks:///{db}/tables", name="Database Tables", description="List all tables in a specific database", mime_type="text/plain")
+
+@mcp.resource(uri="starrocks:///{db}/tables", name="Database Tables",
+              description="List all tables in a specific database", mime_type="text/plain")
 def get_database_tables(db: str) -> str:
     return handle_single_column_query(f"SHOW TABLES FROM {db}")
 
-@mcp.resource(uri="proc:///{path*}", name="System internal information", description=SR_PROC_DESC, mime_type="text/plain")
+
+@mcp.resource(uri="proc:///{path*}", name="System internal information", description=SR_PROC_DESC,
+              mime_type="text/plain")
 def get_system_internal_information(path: str) -> str:
     return read_query(f"show proc '{path}'")
 
@@ -367,7 +376,8 @@ def validate_plotly_expr(expr: str):
 
     # 3. Check that the single node is an expression
     if not isinstance(node, ast.Expr):
-        raise ValueError("Expression must be a single expression, not a statement (like assignment, function definition, import, etc.).")
+        raise ValueError(
+            "Expression must be a single expression, not a statement (like assignment, function definition, import, etc.).")
 
     # 4. Get the actual value of the expression and check it's a function call
     expr_value = node.value
@@ -376,11 +386,11 @@ def validate_plotly_expr(expr: str):
 
     # 5. Check that the function being called is an attribute lookup (like px.scatter)
     if not isinstance(expr_value.func, ast.Attribute):
-         raise ValueError("Function call must be on an object attribute (e.g., px.scatter).")
+        raise ValueError("Function call must be on an object attribute (e.g., px.scatter).")
 
     # 6. Check that the attribute is being accessed on a simple variable name
     if not isinstance(expr_value.func.value, ast.Name):
-         raise ValueError("Function call must be on a simple variable name (e.g., px.scatter, not obj.px.scatter).")
+        raise ValueError("Function call must be on a simple variable name (e.g., px.scatter, not obj.px.scatter).")
 
     # 7. Check that the simple variable name is 'px'
     if expr_value.func.value.id != 'px':
@@ -398,8 +408,10 @@ def validate_plotly_expr(expr: str):
                 keyword_name = kw.arg if kw.arg else '<unknown>'
                 raise ValueError(f"Keyword argument '{keyword_name}' contains a disallowed nested function call.")
 
-@mcp.tool(name="query_and_plotly_chart", description="using sql `query` to extract data from database, then using python `plotly_expr` to generate a chart for UI to display") 
-def query_and_plotly_chart(query: Annotated[str, Field(description="SQL query to execute")], plotly_expr: Annotated[str, Field(description="a one function call expression, with 2 vars binded: `px` as `import plotly.express as px`, and `df` as dataframe generated by query `plotly_expr` example: `px.scatter(df, x=\"sepal_width\", y=\"sepal_length\", color=\"species\", marginal_y=\"violin\", marginal_x=\"box\", trendline=\"ols\", template=\"simple_white\")`")]):
+
+def query_and_plotly_chart(query: Annotated[str, Field(description="SQL query to execute")], plotly_expr: Annotated[
+    str, Field(
+        description="a one function call expression, with 2 vars binded: `px` as `import plotly.express as px`, and `df` as dataframe generated by query `plotly_expr` example: `px.scatter(df, x=\"sepal_width\", y=\"sepal_length\", color=\"species\", marginal_y=\"violin\", marginal_x=\"box\", trendline=\"ols\", template=\"simple_white\")`")]):
     """
     Executes an SQL query, creates a Pandas DataFrame, generates a Plotly chart
     using the provided expression, encodes the chart as a base64 PNG image,
@@ -469,10 +481,11 @@ def query_and_plotly_chart(query: Annotated[str, Field(description="SQL query to
             cursor.close()
 
 
-@mcp.tool(name="table_overview", description="Get an overview of a specific table: columns, sample rows (up to 5), and total row count. Uses cache unless refresh=true.")
 async def table_overview(
-    table: Annotated[str, Field(description="Table name, optionally prefixed with database name (e.g., 'db_name.table_name'). If database is omitted, uses the default database.")],
-    refresh: Annotated[bool, Field(description="Set to true to force refresh, ignoring cache. Defaults to false.")] = False
+        table: Annotated[str, Field(
+            description="Table name, optionally prefixed with database name (e.g., 'db_name.table_name'). If database is omitted, uses the default database.")],
+        refresh: Annotated[
+            bool, Field(description="Set to true to force refresh, ignoring cache. Defaults to false.")] = False
 ) -> str:
     try:
         conn = get_connection()
@@ -515,10 +528,11 @@ async def table_overview(
         return f"Unexpected Error executing tool 'table_overview': {type(e).__name__}: {e}\nStack Trace:\n{stack_trace}"
 
 
-@mcp.tool(name="db_overview", description="Get an overview (columns, sample rows, row count) for ALL tables in a database. Uses cache unless refresh=True. Do not change comments or string literals.")
 async def db_overview(
-    db: Annotated[str, Field(description="Database name. Optional: uses the default database if not provided.")] = default_database,
-    refresh: Annotated[bool, Field(description="Set to true to force refresh, ignoring cache. Defaults to false.")] = False
+        db: Annotated[str, Field(
+            description="Database name. Optional: uses the default database if not provided.")] = default_database,
+        refresh: Annotated[
+            bool, Field(description="Set to true to force refresh, ignoring cache. Defaults to false.")] = False
 ) -> str:
     try:
         conn = get_connection()
@@ -571,7 +585,7 @@ async def db_overview(
 
             all_overviews.append(overview_text)
             all_overviews.append("\n")  # Add separator
-            total_length += len(overview_text)+1
+            total_length += len(overview_text) + 1
 
         return "\n".join(all_overviews)
 
@@ -586,6 +600,18 @@ async def db_overview(
 
 
 async def main():
+    global default_database
+    db_suffix = f". db session already in default db `{default_database}`" if default_database else ""
+    mcp.add_tool(read_query,
+                 description="Execute a SELECT query or commands that return a ResultSet"+db_suffix)
+    mcp.add_tool(write_query,
+                 description="Execute a DDL/DML or other StarRocks command that do not have a ResultSet"+db_suffix)
+    mcp.add_tool(query_and_plotly_chart,
+                 description="using sql `query` to extract data from database, then using python `plotly_expr` to generate a chart for UI to display"+db_suffix)
+    mcp.add_tool(table_overview,
+                 description="Get an overview of a specific table: columns, sample rows (up to 5), and total row count. Uses cache unless refresh=true"+db_suffix)
+    mcp.add_tool(db_overview,
+                 description="Get an overview (columns, sample rows, row count) for ALL tables in a database. Uses cache unless refresh=True"+db_suffix)
     await mcp.run_async(transport=mcp_transport)
 
 
