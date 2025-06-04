@@ -48,7 +48,8 @@ def get_connection():
             'host': os.getenv('STARROCKS_HOST', 'localhost'),
             'port': os.getenv('STARROCKS_PORT', '9030'),
             'user': os.getenv('STARROCKS_USER', 'root'),
-            'password': os.getenv('STARROCKS_PASSWORD', '')
+            'password': os.getenv('STARROCKS_PASSWORD', ''),
+            'auth_plugin': os.getenv('STARROCKS_MYSQL_AUTH_PLUGIN', 'mysql_native_password')
         }
 
         # Use default_database if set during initial connection attempt

@@ -54,6 +54,7 @@ The server can be configured through environment variables:
 - `STARROCKS_PORT` (default: 9030)
 - `STARROCKS_USER` (default: root)
 - `STARROCKS_PASSWORD` (default: empty)
+- `STARROCKS_MYSQL_AUTH_PLUGIN` (default: mysql_native_password) user can also pass different auth plugins like `mysql_clear_password`
 
 ### Installation
 
@@ -88,7 +89,8 @@ Add the following configuration to your MCP settings file:
         "STARROCKS_HOST": "localhost",
         "STARROCKS_PORT": "9030",
         "STARROCKS_USER": "root",
-        "STARROCKS_PASSWORD": ""
+        "STARROCKS_PASSWORD": "",
+        "STARROCKS_MYSQL_AUTH_PLUGIN":"mysql_clear_password"
       }
     }
   }
