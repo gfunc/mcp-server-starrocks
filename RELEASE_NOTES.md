@@ -1,5 +1,10 @@
 # StarRocks MCP Server Release Notes
 
+## Version 0.1.3
+
+1. refactor using fastmcp
+2. add new config STARROCKS_MYSQL_AUTH_PLUGIN
+
 ## Version 0.1.2
 
 Fix accidental extra import of sqlalalchemy
