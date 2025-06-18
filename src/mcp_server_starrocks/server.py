@@ -19,7 +19,8 @@ import os
 import io
 import time
 import traceback
-from fastmcp import FastMCP, Image
+from fastmcp import FastMCP
+from fastmcp.utilities.types import Image
 from fastmcp.exceptions import ToolError
 from typing import Annotated
 from pydantic import Field
@@ -603,15 +604,15 @@ async def db_overview(
 async def main():
     global default_database
     db_suffix = f". db session already in default db `{default_database}`" if default_database else ""
-    mcp.add_tool(read_query,
+    mcp.tool(read_query,
                  description="Execute a SELECT query or commands that return a ResultSet"+db_suffix)
-    mcp.add_tool(write_query,
+    mcp.tool(write_query,
                  description="Execute a DDL/DML or other StarRocks command that do not have a ResultSet"+db_suffix)
-    mcp.add_tool(query_and_plotly_chart,
+    mcp.tool(query_and_plotly_chart,
                  description="using sql `query` to extract data from database, then using python `plotly_expr` to generate a chart for UI to display"+db_suffix)
-    mcp.add_tool(table_overview,
+    mcp.tool(table_overview,
                  description="Get an overview of a specific table: columns, sample rows (up to 5), and total row count. Uses cache unless refresh=true"+db_suffix)
-    mcp.add_tool(db_overview,
+    mcp.tool(db_overview,
                  description="Get an overview (columns, sample rows, row count) for ALL tables in a database. Uses cache unless refresh=True"+db_suffix)
     await mcp.run_async(transport=mcp_transport)
 
